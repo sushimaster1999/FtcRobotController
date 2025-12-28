@@ -35,14 +35,14 @@ public class SampleAuto extends LinearOpMode {
     
     static final double ROBOT_TRACK_WIDTH_INCHES = 16.375; 
 
-    static final double DriveMotorSpeed = 0.4;
-    static final double TURN_SPEED = 0.3;
     static final double LAUNCHER_RPM = 2250;
     // Ticks per second = (RPM / 60) * Ticks per Revolution
     static final double LAUNCHER_VELOCITY_TICKS_PER_SEC = (LAUNCHER_RPM / 60) * LAUNCHER_COUNTS_PER_MOTOR_REV;
     static final double INTAKE_SPEED = 1.0;
     static final double ELEVATOR_SPEED = 0.5;
     static final double INDEXER_SPEED = 1.0;
+    static final double DriveMotorSpeed = 0.4;
+    static final double TURN_SPEED = 0.3;
 
 
     @Override
@@ -61,12 +61,6 @@ public class SampleAuto extends LinearOpMode {
         indexerL = hardwareMap.get(CRServo.class, "indexerL");
         indexerR = hardwareMap.get(CRServo.class, "indexerR");
 
-        //stop and Reset encoders
-        frontLeftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        frontRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        backLeftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        backRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        launcher.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         //Set motor encoder states
         frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -95,6 +89,13 @@ public class SampleAuto extends LinearOpMode {
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         launcher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
+        //stop and Reset encoders
+        frontLeftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        frontRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backLeftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        launcher.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
         telemetry.addData("Status", "Ready to run");
         telemetry.update();
 
@@ -102,15 +103,16 @@ public class SampleAuto extends LinearOpMode {
 
         // --- AUTONOMOUS SEQUENCE ---
 
+        //activate flywheels
+        launcher.setVelocity(LAUNCHER_VELOCITY_TICKS_PER_SEC);
         // Drive backwards 6 inches 0.2 speed
         encoderDrive(-0.2, -6, -6, 4.0);
-
         // Activate subsystems
         intake.setPower(INTAKE_SPEED);
         elevator.setPower(ELEVATOR_SPEED);
         indexerL.setPower(INDEXER_SPEED);
         indexerR.setPower(INDEXER_SPEED);
-        launcher.setVelocity(LAUNCHER_VELOCITY_TICKS_PER_SEC);
+
 
         // Wait for 4 seconds
         sleep(4000);
@@ -121,10 +123,10 @@ public class SampleAuto extends LinearOpMode {
         indexerR.setPower(0);
 
         // Go backwards 10 inches
-        //encoderDrive(DriveMotorSpeed, -10, -10, 5.0);
+        encoderDrive(-.2, -10, -10, 5.0);
 
-        // Turn left 45 degrees
-        //encoderTurn(TURN_SPEED, -45, 4.0);
+        // Turn right 90 degrees
+        encoderTurn(TURN_SPEED, 90, 4.0);
 
         // Go backwards 5 inches
         //encoderDrive(DriveMotorSpeed, -5, -5, 4.0);
@@ -188,7 +190,7 @@ public class SampleAuto extends LinearOpMode {
             // Step 5: Keep looping while we are still active, we haven't timed out, and the motors are busy.
             // The isBusy() method returns true while the motor is still trying to reach its target position.
             while (opModeIsActive() && (runtime.seconds() < timeoutS) &&
-                   (frontLeftDrive.isBusy() && frontRightDrive.isBusy() && backLeftDrive.isBusy() && backRightDrive.isBusy())) {
+                   (frontLeftDrive.isBusy() || frontRightDrive.isBusy() || backLeftDrive.isBusy() || backRightDrive.isBusy())) {
 
                 // Provide telemetry data for monitoring during the move.
                 telemetry.addData("Running to", " %7d :%7d :%7d :%7d", newFrontLeftTarget, newFrontRightTarget, newBackLeftTarget, newBackRightTarget);
@@ -221,9 +223,8 @@ public class SampleAuto extends LinearOpMode {
         // Calculate the arc length for the turn
         double arcInches = (degrees / 360.0) * (ROBOT_TRACK_WIDTH_INCHES * Math.PI);
         
-        // For a right turn (positive degrees), left wheels move forward and right wheels move backward
-        double leftInches = arcInches;
-        double rightInches = -arcInches;
+        double leftInches = -arcInches;
+        double rightInches = arcInches;
 
         // Call encoderDrive with the calculated distances
         encoderDrive(speed, leftInches, rightInches, timeoutS);
